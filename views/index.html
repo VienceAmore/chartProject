@@ -22,7 +22,7 @@
 
     <br/>
     <label for="textPassword">Enter password:</label>
-    <input type="text" id="textPassword" value="1qaz2wsx3edc"> <!--add pass type-->
+    <input type="password" id="textPassword" value="1qaz2wsx3edc">
 
     <br/>
     <label for="textDbName">Enter database name:</label>
@@ -65,8 +65,6 @@
         let selectedDataSetType = "";
         let selectedDataSet = '';
         let selectedChartType = '';
-        let selectedXBinding = '';
-        let selectedYBinding = '';
         let myChart;
 
         const dataSetType_dropdown = document.getElementById('dropdownType');
@@ -106,8 +104,6 @@
                     optionElement.value = option.value;
                     optionElement.textContent = option.label;
                     dataSetType_dropdown.appendChild(optionElement);
-
-                    //TODO: call dataSetType_OnChange
 
                     dataSetType_dropdown.dispatchEvent(new Event("change", {
                         bubbles: true,
@@ -187,7 +183,7 @@
                                 optionElement.textContent = option.COLUMN_NAME;
                                 break;
                             case 'FUNCTION':
-                                //???
+                                //mysql functions return scalar value, can't draw a chart with a single number.
                                 break;
                             default:
                                 console.log("Invalid type");
@@ -210,7 +206,7 @@
                                 optionElement.textContent = option.COLUMN_NAME;
                                 break;
                             case 'FUNCTION':
-                                //???
+                                //mysql functions return scalar value, can't draw a chart with a single number.
                                 break;
                             default:
                                 console.log("Invalid type");
@@ -225,12 +221,6 @@
 
         });
 
-
-    // bindingX_dropdown.addEventListener('change', (event) => {
-    //     selectedXBinding = bindingX_dropdown.options[bindingX_dropdown.selectedIndex].value;
-    //
-    //
-    // })
 
 
     // Create an event listener to listen for changes in the button
@@ -255,6 +245,7 @@
                         dataChart = dataX.map((x, i) => ({ x: x, y: dataY[i] }));
                         break;
                     case 'FUNCTION':
+                        //mysql functions return scalar value, can't draw a chart with a single number.
                         break;
                 }
 
@@ -266,7 +257,7 @@
                     type: typeChart, // Change to 'line', 'pie', etc. for different chart types
                     data: {
                         datasets: [{
-                            label: 'Scatter Data',
+                            label: 'Chart based on Data',
                             data: dataChart,
                             backgroundColor: 'rgba(75, 192, 192, 0.2)', // Set the point color
                             borderColor: 'rgba(75, 192, 192, 1)', // Set the point border color

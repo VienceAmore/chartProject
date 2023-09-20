@@ -94,7 +94,7 @@ app.get('/getDataSetTypes/:DataSetType/:DataSet', (req,res) => {
             query = `SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = 'chartproject' AND TABLE_NAME = '${chosenName}'`;
             break;
         case 'FUNCTION':
-            //???
+            //Not clear what to do here, functions in mysql only return scalar value, can't draw a chart  with one value.
             break;
         default:
             console.log("Invalid type");
@@ -107,7 +107,6 @@ app.get('/getDataSetTypes/:DataSetType/:DataSet', (req,res) => {
         console.log('Selected data:', results);
         switch (chosenType){
             case 'PROCEDURE':
-                //TODO: check if results is empty or not an array
                 if (!results)
                     throw new Error("Sp didn't return anything");
                 if (results.length < 1)
