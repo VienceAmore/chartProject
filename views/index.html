@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My chart project</title>
+    <!-- Include Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <h1>Welcome to my charts project!</h1>
+
+    <label for="textHost">Enter host:</label>
+    <input type="text" id="textHost" value="localhost">
+
+    <br/>
+    <label for="textUser">Enter user:</label>
+    <input type="text" id="textUser" value="root">
+
+    <br/>
+    <label for="textPassword">Enter password:</label>
+    <input type="text" id="textPassword" value="1qaz2wsx3edc"> <!--add pass type-->
+
+    <br/>
+    <label for="textDbName">Enter database name:</label>
+    <input type="text" id="textDbName" value = "chartproject">
+    <br/><br/>
+    <button id="buttonDataBase">Connect to db</button>
+
+
+    <br/><br/><br/>
+    <label for="dropdownType">Select dataSet_Type:</label>
+    <select id="dropdownType"> </select>
+
+    <br/><br/>
+    <label for="dropdownDataSet">Select dataSet:</label>
+    <select id="dropdownDataSet"> </select>
+
+    <br/><br/>
+    <label for="dropdownBindingX">Select binding X:</label>
+    <select id="dropdownBindingX"> </select>
+
+    <label for="dropdownBindingY">Select binding Y:</label>
+    <select id="dropdownBindingY"> </select>
+
+    <br/><br/>
+    <label for="chart_type">Select a Chart Type:</label>
+    <select id="chart_type">
+        <option value="line">line</option>
+        <option value="bar">bar</option>
+    </select>
+
+    <br/><br/>
+    <button id="buttonChart" class="btn-primary">Create chart</button>
+    <br/><br/><br/>
+
+<!-- Add a canvas element for the chart -->
+<canvas id="myChart" width="600" height="400"></canvas>
+
+<!--getting list of dataset types options from app.js and creating dropdown with these options-->
+    <script>
+        let selectedDataSetType = "";
+        let selectedDataSet = '';
+        let selectedChartType = '';
+        let selectedXBinding = '';
+        let selectedYBinding = '';
+        let myChart;
+
+        const dataSetType_dropdown = document.getElementById('dropdownType');
+        const dataSet_dropdown = document.getElementById('dropdownDataSet');
+        const bindingX_dropdown = document.getElementById('dropdownBindingX');
+        const bindingY_dropdown = document.getElementById('dropdownBindingY')
+        const chartType_dropdown = document.getElementById('chart_type');
+        const createChart_button = document.getElementById('buttonChart');
+        const connectToDB_button = document.getElementById('buttonDataBase');
+        // Get a reference to the canvas element
+        const ctx = document.getElementById('myChart').getContext('2d');
+
+        const onChangeEvent = new Event("change", {
+            bubbles: true,
+            cancelable: true,
+        });
+
+        connectToDB_button.addEventListener('click', connectToDBFunction);
+        function connectToDBFunction(){
+            const selectedHost = document.getElementById("textHost").value;
+            const selectedUser = document.getElementById("textUser").value;
+            const selectedPassword = document.getElementById("textPassword").value;
+            const selectedDBName = document.getElementById("textDbName").value;
+
+            fetch(`/getDBconnectionData/${selectedHost}/${selectedUser}/${selectedPassword}/${selectedDBName}`);
+        }
+
+        connectToDBFunction();
+
+
+        //select dataset type from list from app.js and create dropdown
+        fetch('/getDataSetTypes')
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(option => {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option.value;
+                    optionElement.textContent = option.label;
+                    dataSetType_dropdown.appendChild(optionElement);
+
+                    //TODO: call dataSetType_OnChange
+
+                    dataSetType_dropdown.dispatchEvent(new Event("change", {
+                        bubbles: true,
+                        cancelable: true,
+                    }));
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+            });
+
+        //send to app.js chosen option and create dropdowm for possible names for this type
+        dataSetType_dropdown.addEventListener('change', (event) => {
+            selectedDataSetType = dataSetType_dropdown.options[dataSetType_dropdown.selectedIndex].value;
+            //alert(selectedDataSetType);
+            fetch(`/getDataSetTypes/${selectedDataSetType}`)
+                .then(response => response.json())
+                .then(data => {
+                    // //Clearing all options
+                    while (dataSet_dropdown.options.length > 0) {
+                        dataSet_dropdown.remove(0);
+                    }
+
+                    data.forEach(option => {
+                        const optionElement = document.createElement('option');
+                        switch(selectedDataSetType)
+                        {
+                            case 'PROCEDURE':
+                            case 'FUNCTION':
+                                optionElement.value = option.ROUTINE_NAME;
+                                optionElement.textContent = option.ROUTINE_NAME;
+                                break;
+                            case 'VIEW':
+                                optionElement.value = option.TABLE_NAME;
+                                optionElement.textContent = option.TABLE_NAME;
+                                break;
+                            default:
+                                console.log("Invalid type");
+                        }
+                        dataSet_dropdown.appendChild(optionElement);
+                        dataSet_dropdown.dispatchEvent(onChangeEvent);
+
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                });
+
+        });
+
+        //retrieve selected name and send it to app.js then ????
+        dataSet_dropdown.addEventListener('change', (event) => {
+            selectedDataSet = dataSet_dropdown.options[dataSet_dropdown.selectedIndex].value;
+            //alert(selectedDataSet);
+            fetch(`/getDataSetTypes/${selectedDataSetType}/${selectedDataSet}`)
+                .then(response => response.json())
+                .then(data => {
+                    //Clearing all options
+                    while (bindingX_dropdown.options.length > 0) {
+                        bindingX_dropdown.remove(0);
+                    }
+                    //Clearing all options
+                    while (bindingY_dropdown.options.length > 0) {
+                        bindingY_dropdown.remove(0);
+                    }
+
+                    data.forEach(option => {
+                        const optionElement = document.createElement('option');
+                        switch(selectedDataSetType)
+                        {
+                            case 'PROCEDURE':
+                                optionElement.value = option;
+                                optionElement.textContent = option;
+                                break;
+                            case 'VIEW':
+                                optionElement.value = option.COLUMN_NAME;
+                                optionElement.textContent = option.COLUMN_NAME;
+                                break;
+                            case 'FUNCTION':
+                                //???
+                                break;
+                            default:
+                                console.log("Invalid type");
+                        }
+                        bindingX_dropdown.appendChild(optionElement);
+                        bindingX_dropdown.dispatchEvent(onChangeEvent);
+
+                    });
+                    //the same for dropdown Y
+                    data.forEach(option => {
+                        const optionElement = document.createElement('option');
+                        switch(selectedDataSetType)
+                        {
+                            case 'PROCEDURE':
+                                optionElement.value = option;
+                                optionElement.textContent = option;
+                                break;
+                            case 'VIEW':
+                                optionElement.value = option.COLUMN_NAME;
+                                optionElement.textContent = option.COLUMN_NAME;
+                                break;
+                            case 'FUNCTION':
+                                //???
+                                break;
+                            default:
+                                console.log("Invalid type");
+                        }
+                        bindingY_dropdown.appendChild(optionElement);
+                        bindingY_dropdown.dispatchEvent(onChangeEvent);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                });
+
+        });
+
+
+    // bindingX_dropdown.addEventListener('change', (event) => {
+    //     selectedXBinding = bindingX_dropdown.options[bindingX_dropdown.selectedIndex].value;
+    //
+    //
+    // })
+
+
+    // Create an event listener to listen for changes in the button
+    createChart_button.addEventListener('click', buttonClickedFunction);
+    function buttonClickedFunction(){
+        selectedChartType = chartType_dropdown.options[chartType_dropdown.selectedIndex].value;
+        selectedDataSetType = dataSetType_dropdown.options[dataSetType_dropdown.selectedIndex].value;
+        selectedDataSet = dataSet_dropdown.options[dataSet_dropdown.selectedIndex].value;
+        let dataX;
+        let dataY;
+        let dataChart;
+        let typeChart = selectedChartType;
+
+        fetch(`/getDataSetTypes/${selectedDataSetType}/${selectedDataSet}/:DataSetData`)
+            .then(response => response.json())
+            .then(data => {
+                switch (selectedDataSetType){
+                    case 'PROCEDURE':
+                    case 'VIEW':
+                        dataX =data.map(item => item[bindingX_dropdown.value]);
+                        dataY =data.map(item => item[bindingY_dropdown.value]);
+                        dataChart = dataX.map((x, i) => ({ x: x, y: dataY[i] }));
+                        break;
+                    case 'FUNCTION':
+                        break;
+                }
+
+                //destroy chart if exists
+                if (myChart) myChart.destroy();
+
+                // Create a new chart using Chart.js
+                myChart = new Chart(ctx, {
+                    type: typeChart, // Change to 'line', 'pie', etc. for different chart types
+                    data: {
+                        datasets: [{
+                            label: 'Scatter Data',
+                            data: dataChart,
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)', // Set the point color
+                            borderColor: 'rgba(75, 192, 192, 1)', // Set the point border color
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: false, // Set to true for responsive sizing-->
+                        maintainAspectRatio: false, // Set false to allow custom size&ndash;&gt;
+                        scales: {
+                            x: {
+                                beginAtZero: true
+                            },
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            })
+    }
+</script>
+</body>
+</html>
